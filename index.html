@@ -1,0 +1,75 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>JSON Tree Viewer</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',sans-serif;background:#0f0f23;color:#e0e0e0;height:100vh;display:flex;flex-direction:column}
+.ob{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.92);z-index:1000;display:flex;justify-content:center;align-items:center}.ob.hide{display:none}
+.oc{background:#1a1a3e;border-radius:20px;padding:40px;max-width:500px;width:90%;text-align:center}
+.oc h2{color:#48dbfb;font-size:28px;margin-bottom:8px}.oc .sub{color:#888;font-size:14px}
+.stps{margin:25px 0;text-align:left;display:flex;flex-direction:column;gap:18px}
+.st{display:flex;gap:14px;align-items:flex-start}.st .n{width:32px;height:32px;border-radius:50%;background:#48dbfb;color:#000;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px}
+.st h4{font-size:14px;margin-bottom:2px}.st p{font-size:12px;color:#888;line-height:1.5}
+.oc button{padding:14px 40px;border:none;border-radius:10px;background:#48dbfb;color:#000;font-size:16px;font-weight:700;cursor:pointer}
+.oc .sk{color:#555;font-size:12px;cursor:pointer;margin-top:12px;display:inline-block}
+.app{display:none;flex:1;flex-direction:column}.app.show{display:flex}
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:10px 20px;background:#1a1a3e;border-bottom:1px solid #2a2a4e;flex-wrap:wrap;gap:8px}
+.topbar h1{font-size:16px}h1 span{background:linear-gradient(90deg,#48dbfb,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.topbar .actions{display:flex;gap:8px}
+.topbar button{padding:6px 14px;border:1px solid #333;border-radius:6px;background:#0f0f23;color:#fff;cursor:pointer;font-size:12px}
+.topbar button:hover{border-color:#48dbfb}
+.split{display:flex;flex:1;overflow:hidden}
+.left{flex:1;display:flex;flex-direction:column;border-right:1px solid #2a2a4e}
+.left textarea{flex:1;padding:15px;background:#0f0f23;color:#a855f7;font-family:monospace;font-size:13px;border:none;resize:none;line-height:1.6}
+.left textarea:focus{outline:none}
+.right{flex:1;overflow:auto;padding:15px;background:#141428;font-family:monospace;font-size:13px;line-height:1.6}
+.tree-node{margin-left:20px}
+.tree-key{color:#48dbfb}.tree-string{color:#00b894}.tree-number{color:#feca57}.tree-bool{color:#e17055}.tree-null{color:#888}
+.toggle{cursor:pointer;display:inline-block;width:14px;text-align:center;color:#666;user-select:none}.toggle:hover{color:#fff}
+.collapsed{display:none}
+.error{color:#ff6b6b;padding:10px;font-size:13px}
+.stats{padding:8px 20px;background:#1a1a3e;border-top:1px solid #2a2a4e;font-size:12px;color:#666}
+</style></head><body>
+<div class="ob" id="ob"><div class="oc">
+<h2>JSON Tree Viewer</h2><p class="sub">Visualize JSON as an interactive tree</p>
+<div class="stps">
+<div class="st"><div class="n">1</div><div><h4>Paste JSON</h4><p>Paste any JSON data into the left panel. It parses and renders automatically.</p></div></div>
+<div class="st"><div class="n">2</div><div><h4>Explore the Tree</h4><p>Click the arrows to expand/collapse objects and arrays. Keys, values, and types are color-coded.</p></div></div>
+<div class="st"><div class="n">3</div><div><h4>Load Example</h4><p>Click Load Example to see a sample JSON with nested objects and arrays.</p></div></div>
+</div>
+<button onclick="start()">Open Viewer</button>
+<div class="sk" onclick="start()">Skip</div>
+</div></div>
+<div class="app" id="app">
+<div class="topbar"><h1><span>JSON Tree Viewer</span></h1><div class="actions"><button onclick="loadExample()">Load Example</button><button onclick="expandAll()">Expand All</button><button onclick="collapseAll()">Collapse All</button><button onclick="clearAll()">Clear</button></div></div>
+<div class="split"><div class="left"><textarea id="input" placeholder='Paste JSON here...\n\nExample:\n{"name":"John","age":30,"hobbies":["coding","gaming"]}' oninput="parse()"></textarea></div><div class="right" id="tree"></div></div>
+<div class="stats" id="stats">Ready</div></div>
+<script>
+var jsonData=null;
+function start(){document.getElementById('ob').classList.add('hide');document.getElementById('app').classList.add('show');localStorage.setItem('jv_seen','1')}
+if(localStorage.getItem('jv_seen')){document.getElementById('ob').classList.add('hide');document.getElementById('app').classList.add('show')}
+function parse(){
+var text=document.getElementById('input').value.trim();if(!text){document.getElementById('tree').innerHTML='';document.getElementById('stats').textContent='Ready';return}
+try{jsonData=JSON.parse(text);document.getElementById('tree').innerHTML=renderNode(jsonData,'root',0);document.getElementById('stats').textContent='Valid JSON | '+countNodes(jsonData)+' nodes'}catch(e){document.getElementById('tree').innerHTML='<div class="error">Error: '+e.message+'</div>';document.getElementById('stats').textContent='Invalid JSON'}
+}
+function renderNode(data,key,depth){
+if(data===null)return '<div class="tree-node"><span class="tree-key">'+key+':</span> <span class="tree-null">null</span></div>';
+if(typeof data==='boolean')return '<div class="tree-node"><span class="tree-key">'+key+':</span> <span class="tree-bool">'+data+'</span></div>';
+if(typeof data==='number')return '<div class="tree-node"><span class="tree-key">'+key+':</span> <span class="tree-number">'+data+'</span></div>';
+if(typeof data==='string')return '<div class="tree-node"><span class="tree-key">'+key+':</span> <span class="tree-string">"'+data+'"</span></div>';
+if(Array.isArray(data)){
+if(!data.length)return '<div class="tree-node"><span class="tree-key">'+key+':</span> []</div>';
+var id='n'+Math.random().toString(36).substr(2,8);
+var html='<div class="tree-node"><span class="toggle" onclick="tog(\\''+id+'\\')">&#9660;</span> <span class="tree-key">'+key+':</span> ['+data.length+']</div>';
+html+='<div id="'+id+'">';data.forEach(function(item,i){html+=renderNode(item,i,depth+1)});html+='</div>';return html}
+if(typeof data==='object'){
+var keys=Object.keys(data);if(!keys.length)return '<div class="tree-node"><span class="tree-key">'+key+':</span> {}</div>';
+var id='n'+Math.random().toString(36).substr(2,8);
+var html='<div class="tree-node"><span class="toggle" onclick="tog(\\''+id+'\\')">&#9660;</span> <span class="tree-key">'+key+':</span> {'+keys.length+'}</div>';
+html+='<div id="'+id+'">';keys.forEach(function(k){html+=renderNode(data[k],k,depth+1)});html+='</div>';return html}
+return '';
+}
+function tog(id){var el=document.getElementById(id);var toggle=el.previousElementSibling.querySelector('.toggle');
+if(el.classList.contains('collapsed')){el.classList.remove('collapsed');toggle.innerHTML='&#9660;'}else{el.classList.add('collapsed');toggle.innerHTML='&#9654;'}}
+function expandAll(){document.querySelectorAll('.collapsed').forEach(function(el){el.classList.remove('collapsed')});document.querySelectorAll('.toggle').forEach(function(el){el.innerHTML='&#9660;'})}
+function collapseAll(){document.querySelectorAll('.tree-node').forEach(function(el){var next=el.nextElementSibling;if(next&&next.id){next.classList.add('collapsed');el.querySelector('.toggle').innerHTML='&#9654;'}})}
+function clearAll(){document.getElementById('input').value='';document.getElementById('tree').innerHTML='';document.getElementById('stats').textContent='Ready'}
+function countNodes(d){if(d===null||typeof d!=='object')return 1;var c=1;if(Array.isArray(d))d.forEach(function(i){c+=countNodes(i)});else Object.values(d).forEach(function(v){c+=countNodes(v)});return c}
+function loadExample(){document.getElementById('input').value=JSON.stringify({name:"John Doe",age:30,active:true,address:{street:"123 Main St",city:"Jakarta",country:"Indonesia",coords:{lat:-6.2088,lng:106.8456}},hobbies:["coding","gaming","reading"],education:[{degree:"Bachelor",year:2020},{degree:"Master",year:2023}],settings:{theme:"dark",notifications:true,language:"en"},balance:null},null,2);parse()}
+</script></body></html>
